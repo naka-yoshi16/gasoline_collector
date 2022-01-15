@@ -17,16 +17,53 @@ const puppeteer = require('puppeteer');
   // let listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1.odd"; //rank1全て?
   let listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1"; // rank1すべて?
   // let listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr"; // tr全て?
+  let tableSelector="#main > div.unit.nottl.unit-contents > div > table"; // table
 
   // 一つセレクターの一つの要素をとる
+  // var data = await page.evaluate((selector) => {
+  //   return document.querySelector(selector).textContent;
+  // }, itemSelector);
+  // console.log(data)
+  // let format = data.trim()
+  // let split = format.split('\n\t\t\t\t\t\t\t\t')
+  // console.log(JSON.stringify(format))
+  // console.log(JSON.stringify(split))
+
   var data = await page.evaluate((selector) => {
     return document.querySelector(selector).textContent;
-  }, itemSelector);
-  console.log(data)
-  let format = data.trim()
-  let split = format.split('\n\t\t\t\t\t\t\t\t')
-  console.log(JSON.stringify(format))
-  console.log(JSON.stringify(split))
+  }, tableSelector);
+  // console.log(JSON.stringify(data))
+  let format = data.trim() // 前後の区切り文字 削除
+  // console.log(JSON.stringify(format))
+  let columnDelimiter = '\n\t\t\t\t\t\t\t\t'
+  let headerDelimiter = "\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t;"
+  let rowDelimiter = '\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t'
+  
+  let columnSplit = format.split(columnDelimiter)
+  let rowSplit = format.split(rowDelimiter) // 行ごとに分割
+  console.log(JSON.stringify(rowSplit,null," "))
+  // console.log(JSON.stringify(format))
+  // console.log(JSON.stringify(columnSplit))
+  // console.log(JSON.stringify(rowSplit))
+  // let row = []
+  let row = rowSplit.map(element => {
+    // console.log(JSON.stringify(element,null," "))
+    // row.push(element)
+    let trim = element.trim() // 各行前後の不要区切り文字を削除
+    return trim.split(columnDelimiter)
+  });
+  // console.log(JSON.stringify(row,null," "))
+  console.log(JSON.stringify(row))
+  // let resultww = rowSplit.forEach(element => {
+  //   console.log(JSON.stringify(element.trim(),null," "))
+  //   row.push(element)
+  // });
+  // console.log(JSON.stringify(row));
+  let result2 = row.forEach(element => {
+    // console.log(JSON.stringify(element.split(columnDelimiter)))
+    // element.split(columnDelimiter)
+  });
+  // console.log(JSON.stringify(result2))
 
   // // 一つセレクターの複数要素をとる
   // var data = await page.evaluate((selector) => {
