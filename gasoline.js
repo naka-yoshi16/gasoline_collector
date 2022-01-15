@@ -18,11 +18,15 @@ const puppeteer = require('puppeteer');
   let listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1"; // rank1すべて?
   // let listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr"; // tr全て?
 
-  // // 一つセレクターの一つの要素をとる
-  // var data = await page.evaluate((selector) => {
-  //   return document.querySelector(selector).textContent;
-  // }, itemSelector);
-  // console.log(data)
+  // 一つセレクターの一つの要素をとる
+  var data = await page.evaluate((selector) => {
+    return document.querySelector(selector).textContent;
+  }, itemSelector);
+  console.log(data)
+  let format = data.trim()
+  let split = format.split('\n\t\t\t\t\t\t\t\t')
+  console.log(JSON.stringify(format))
+  console.log(JSON.stringify(split))
 
   // // 一つセレクターの複数要素をとる
   // var data = await page.evaluate((selector) => {
@@ -34,26 +38,18 @@ const puppeteer = require('puppeteer');
   // }, itemSelector);
   // console.log(data)
 
-  // 複数セレクターの一つの要素をとる
-  let datas = await page.evaluate((selector) => {
-    const list = Array.from(document.querySelectorAll(selector));
-    return list.map(data => data.textContent);
-  }, listSelector);
-  // let format = datas[0].split('\t') 
-  // let format = datas[0].split('\n') 
-  // let format = datas[0].replace('/\t/','')
-  // let format = datas[0].replace('/\n/','')
-  let format = datas[0].trim()
-  let split = format.split('\n\t\t\t\t\t\t\t\t')
-  // let format = datas.trim()
-  // let format = datas.foreach(element => {
-  //   element.trim()
-  // });
-  console.log(datas)
-  console.log(JSON.stringify(datas))
-  console.log(JSON.stringify(datas[0]))
-  console.log(JSON.stringify(format))
-  console.log(JSON.stringify(split))
+  // // 複数セレクターの一つの要素をとる
+  // let datas = await page.evaluate((selector) => {
+  //   const list = Array.from(document.querySelectorAll(selector));
+  //   return list.map(data => data.textContent);
+  // }, listSelector);
+  // let format = datas[0].trim()
+  // let split = format.split('\n\t\t\t\t\t\t\t\t')
+  // console.log(datas)
+  // console.log(JSON.stringify(datas))
+  // console.log(JSON.stringify(datas[0]))
+  // console.log(JSON.stringify(format))
+  // console.log(JSON.stringify(split))
 
 
   // サイトのセレクタを取得(selectorをコピー)
