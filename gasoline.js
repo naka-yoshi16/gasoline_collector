@@ -1,5 +1,6 @@
 // https://www.wantedly.com/companies/tutorial/post_articles/296220
 
+const { pushData } = require('apify');
 const puppeteer = require('puppeteer');
 
 (async () => {
@@ -29,41 +30,107 @@ const puppeteer = require('puppeteer');
   // console.log(JSON.stringify(format))
   // console.log(JSON.stringify(split))
 
-  var data = await page.evaluate((selector) => {
+  let headerDelimiter = "\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t;"
+  let rowDelimiter = '\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t' // table行の区切り文字
+  let columnDelimiter = '\n\t\t\t\t\t\t\t\t' // 列ごとの区切り文字
+
+  // 生データ取得
+  var RawData = await page.evaluate((selector) => {
     return document.querySelector(selector).textContent;
   }, tableSelector);
-  // console.log(JSON.stringify(data))
-  let format = data.trim() // 前後の区切り文字 削除
-  // console.log(JSON.stringify(format))
-  let columnDelimiter = '\n\t\t\t\t\t\t\t\t'
-  let headerDelimiter = "\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t;"
-  let rowDelimiter = '\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t'
+  // console.log(JSON.stringify(RawData))
   
-  let columnSplit = format.split(columnDelimiter)
-  let rowSplit = format.split(rowDelimiter) // 行ごとに分割
-  console.log(JSON.stringify(rowSplit,null," "))
-  // console.log(JSON.stringify(format))
-  // console.log(JSON.stringify(columnSplit))
-  // console.log(JSON.stringify(rowSplit))
-  // let row = []
-  let row = rowSplit.map(element => {
-    // console.log(JSON.stringify(element,null," "))
-    // row.push(element)
-    let trim = element.trim() // 各行前後の不要区切り文字を削除
-    return trim.split(columnDelimiter)
+  // 行ごとに分割
+  let trimRawData = RawData.trim() // 前後の区切り文字 削除
+  // console.log(JSON.stringify(trimRawData))
+  let rowSplit = trimRawData.split(rowDelimiter) // table行ごとに分割
+  // console.log(JSON.stringify(rowSplit,null," "))
+  
+  // 列を整形
+  let rows = rowSplit.map(row => {
+    // console.log(JSON.stringify(row,null," "))
+    let rowTrim = row.trim() // 各行前後の不要区切り文字を削除
+    return rowTrim.split(columnDelimiter) //　列ごとの区切り文字を削除
   });
-  // console.log(JSON.stringify(row,null," "))
-  console.log(JSON.stringify(row))
-  // let resultww = rowSplit.forEach(element => {
-  //   console.log(JSON.stringify(element.trim(),null," "))
-  //   row.push(element)
-  // });
-  // console.log(JSON.stringify(row));
-  let result2 = row.forEach(element => {
-    // console.log(JSON.stringify(element.split(columnDelimiter)))
-    // element.split(columnDelimiter)
-  });
-  // console.log(JSON.stringify(result2))
+  // console.log(JSON.stringify(rows,null," "))
+  console.log(JSON.stringify(rows))// rows↓
+  // [
+  //   ["順位","レギュラー","都道府県","ハイオク","都道府県","軽油","都道府県"],
+  //   ["1","149.17円","岩手県","160.26円","岩手県","127.00円","香川県"],
+  //   ["2","152.00円","香川県","162.00円","香川県","129.00円","愛媛県"],
+  //   // ...
+  //   ["46","---","佐賀県","---","佐賀県","---","佐賀県"],
+  //   ["--","155.04円","沖縄県","166.94円","沖縄県","135.71円","沖縄県"]
+  // ]
+
+  // vuetifyで使いやすいように整形
+  // ヘッダー
+  let headers = rows[0].map((text,index) => {
+    let header ={}
+    header.text = text
+    // switch (text){
+    switch (index){
+      case 0:
+        header.value = 'rank';        break;
+      case 1:
+        header.value = 'regular';     break;
+      case 2:
+        header.value = 'rglrPrefacture';  break;
+      case 3:
+        header.value = 'highOctane';  break;
+      case 4:
+        header.value = 'hghoctnPrefacture';  break;
+      case 5:
+        header.value = 'lightOil';    break;
+      case 6:
+        header.value = 'lghtOlPrefacture';  break;
+    }
+    return header
+  })
+  console.log(headers)// headers↓
+  // [
+  //   { text: '順位', value: 'rank' },
+  //   { text: 'レギュラー', value: 'regular' },
+  //   { text: '都道府県', value: 'rglrPrefacture' },
+  //   { text: 'ハイオク', value: 'highOctane' },
+  //   { text: '都道府県', value: 'hghoctnPrefacture' },
+  //   { text: '軽油', value: 'lightOil' },
+  //   { text: '都道府県', value: 'lghtOlPrefacture' }
+  // ]
+
+  let items = rows.map((row, line) => { // 行ごとにループ
+    if(line !== 0){
+      let item = {}; // オブジェクト枠作成
+      row.forEach((value, index) => {　// 列項目ごとにループ
+        item[`${headers[index].value}`] = value // item.項目名 = 項目値
+      })
+      // console.log(item) //一行 処理結果
+      return item // mapにより自動で配列へ格納される
+    }
+  })
+  items.splice(0,1) // 0個目のundinedを削除
+  console.log(items)// items↓
+  // [
+  //   {
+  //     rank: '1',
+  //     regular: '149.17円',
+  //     rglrPrefacture: '岩手県',
+  //     highOctane: '160.26円',
+  //     hghoctnPrefacture: '岩手県',
+  //     lightOil: '127.00円',
+  //     lghtOlPrefacture: '香川県'
+  //   },
+  // // ...,
+  //   {
+  //     rank: '--',
+  //     regular: '155.04円',
+  //     rglrPrefacture: '沖縄県',
+  //     highOctane: '166.94円',
+  //     hghoctnPrefacture: '沖縄県',
+  //     lightOil: '135.71円',
+  //     lghtOlPrefacture: '沖縄県'
+  //   }
+  // ]
 
   // // 一つセレクターの複数要素をとる
   // var data = await page.evaluate((selector) => {
