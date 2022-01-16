@@ -7,45 +7,51 @@ const puppeteer = require('puppeteer');
 
 // 即時関数を使う理由 https://qiita.com/katsukii/items/cfe9fd968ba0db603b1e
 // module.exports = average;
+module.exports = {
 // const average = (async () => {
-exports.average = (async () => {
-  const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
-  console.log(`average実行開始:${exeTime}`)
+// exports.average = (async () => {
+// exports.average = (async (exeTime) => {
+  average :async (exeTime) => {
+    // const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
+    console.log(`average実行開始:${exeTime}`)
 
-  const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch();
 
-  const page = await browser.newPage();
-  // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
-  const url = 'https://e-nenpi.com/gs/prefavg'
-  await page.goto(url);
+    const page = await browser.newPage();
+    // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
+    const url = 'https://e-nenpi.com/gs/prefavg'
+    await page.goto(url);
 
-  // puppeteerでの要素の取得方法 https://qiita.com/go_sagawa/items/85f97deab7ccfdce53ea
-  // let itemSelector="some selecter > ul > li:nth-child(1) > a";
-  // let listSelector="some selecter > ul > li > a";
+    // puppeteerでの要素の取得方法 https://qiita.com/go_sagawa/items/85f97deab7ccfdce53ea
+    // let itemSelector="some selecter > ul > li:nth-child(1) > a";
+    // let listSelector="some selecter > ul > li > a";
 
-  const itemSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1.odd";
-  // const listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1.odd"; //rank1全て?
-  const listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1"; // rank1すべて?
-  // const listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr"; // tr全て?
-  const tableSelector="#main > div.unit.nottl.unit-contents > div > table"; // table
+    const itemSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1.odd";
+    // const listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1.odd"; //rank1全て?
+    const listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr.rank1"; // rank1すべて?
+    // const listSelector="#main > div.unit.nottl.unit-contents > div > table > tbody > tr"; // tr全て?
+    const tableSelector="#main > div.unit.nottl.unit-contents > div > table"; // table
 
-  // 生データ取得
-  let RawData = await page.evaluate((selector) => {
-    return document.querySelector(selector).textContent;
-  }, tableSelector);
-  // console.log(JSON.stringify(RawData))
-  
-  // 生データを成形
-  let rows = prettyPrint(RawData);
-  // console.log(rows)
+    // 生データ取得
+    let RawData = await page.evaluate((selector) => {
+      return document.querySelector(selector).textContent;
+    }, tableSelector);
+    // console.log(JSON.stringify(RawData))
+    
+    // 生データを成形
+    let rows = prettyPrint(RawData);
+    // console.log(rows)
 
-  // vuetify用に成形
-  let TBL = forVuetifyTBL(rows);
-  // console.log(TBL)
+    // vuetify用に成形
+    let TBL = forVuetifyTBL(rows);
+    console.log(TBL)
 
-  await browser.close();
-  return {exeTime, rows, TBL}
-})();
+    await browser.close();
+    return {exeTime, rows, TBL}
+// })();
+
+  }
+}
 // // 非同期処理とPromise https://zenn.dev/bowtin/articles/ab7d30c33fa747
 // average
 //   // .then(result => console.log(average))

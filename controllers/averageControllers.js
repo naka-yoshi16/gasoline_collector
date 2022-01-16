@@ -36,11 +36,13 @@ module.exports = {
   },
   // POSTリクエストによるユーザの登録
   // postRegistUser : async (req, res) => {
-  postNewData : async (req, res) => {
+  // postNewData : async (req, res) => {
+  postNewData : async (exeTime, res) => {
     try {  
       await console.log(`start postNewData. retriving average`)
       // const data = await average.average();
-      const data = await average.average;
+      // const data = await average.average;
+      const data = await average.average(exeTime);
       await console.log(`retrived average`)
       // await console.log(`${data}`)
       const newData = await new gasoline_average({
