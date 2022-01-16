@@ -4,6 +4,8 @@
 const cron = require('node-cron');
 
 const moment = require('moment');
+const mongo = require('./mongo')
+const averageController = require("./controllers/averageControllers");
 // cron.schedule('*/3 * * * * *', () => console.log('3秒ごとに実行'));
 // cron.schedule('*/3 * * * * *', () => {
 //   const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
@@ -19,32 +21,8 @@ cron.schedule('* * * * *', () => {
   const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
   console.log(`実行開始:${exeTime}`)
 
+  mongo.connect() // mongo接続
 
-  require('dotenv').config(); // 環境変数
-  const express = require('express');
-  const app = express();
-  const mongoose = require('mongoose');
-  const averageController = require("./controllers/averageControllers");
-  const errorController = require("./controllers/errorController");
-
-  const port = process.env.PORT_Exchange_Gas;
-  const DB_name = process.env.DB_Exchange_Gas;
-  const mongoURL =process.env.MONGODB_URL_Exchange_Gas;
-
-  const options = {
-    useUnifiedTopology: true,
-    useNewUrlParser: true,
-  };
-
-  mongoose.connect(mongoURL, options);
-
-  const db = mongoose.connection;
-
-  db.on('error', console.error.bind(console, `DB ${DB_name} connection error:`));
-  db.once('open', () => console.log(`DB ${DB_name} connection successful`));
-
-  // averageController.postNewData
-  // averageController.postNewData()
   averageController.postNewData(exeTime)
 });
 

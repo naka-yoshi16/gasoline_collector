@@ -44,12 +44,11 @@ module.exports = {
 
     // vuetify用に成形
     let TBL = forVuetifyTBL(rows);
-    console.log(TBL)
+    // console.log(TBL)
 
     await browser.close();
     return {exeTime, rows, TBL}
 // })();
-
   }
 }
 // // 非同期処理とPromise https://zenn.dev/bowtin/articles/ab7d30c33fa747
