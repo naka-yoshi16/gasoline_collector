@@ -1,5 +1,9 @@
-// https://www.wantedly.com/companies/tutorial/post_articles/296220
+// import moment from 'moment'
+const moment = require('moment');
+const now = moment().format()    // 2020-04-22T22:14:25+09:00
+console.log(now)
 
+// https://www.wantedly.com/companies/tutorial/post_articles/296220
 const { pushData } = require('apify');
 const puppeteer = require('puppeteer');
 
@@ -7,6 +11,7 @@ const puppeteer = require('puppeteer');
   const browser = await puppeteer.launch();
 
   const page = await browser.newPage();
+  // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
   const url = 'https://e-nenpi.com/gs/prefavg'
   await page.goto(url);
 
