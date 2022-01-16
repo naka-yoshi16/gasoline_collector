@@ -6,7 +6,9 @@ const { pushData } = require('apify');
 const puppeteer = require('puppeteer');
 
 // 即時関数を使う理由 https://qiita.com/katsukii/items/cfe9fd968ba0db603b1e
-const average = (async () => {
+// module.exports = average;
+// const average = (async () => {
+exports.average = (async () => {
   const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
   console.log(`average実行開始:${exeTime}`)
 
@@ -44,12 +46,12 @@ const average = (async () => {
   await browser.close();
   return {exeTime, rows, TBL}
 })();
-// 非同期処理とPromise https://zenn.dev/bowtin/articles/ab7d30c33fa747
-average
-  // .then(result => console.log(average))
-  // .then(result => console.dir(result))
-  .then(result => console.log(JSON.stringify(result,null,'\t')))
-  .catch(() => console.log(`average失敗`));
+// // 非同期処理とPromise https://zenn.dev/bowtin/articles/ab7d30c33fa747
+// average
+//   // .then(result => console.log(average))
+//   // .then(result => console.dir(result))
+//   .then(result => console.log(JSON.stringify(result,null,'\t')))
+//   .catch((err) => console.log(`average失敗${err}`));
 
 const prettyPrint = (RawData) =>{
   const headerDelimiter = "\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t;"
