@@ -23,32 +23,36 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, `DB ${DB_name} connection error:`));
 db.once('open', () => console.log(`DB ${DB_name} connection successful`));
 
-app.set('json spaces', 2) // jsonをpretty表示 https://stackoverflow.com/questions/32679505/node-and-express-send-json-formatted
+// averageController.postNewData
+averageController.postNewData()
 
-// テスト
-app.get(`/api/${DB_name}/`, averageController.getTest);
+// express上で動く必要ないことに気づいた...
+// app.set('json spaces', 2) // jsonをpretty表示 https://stackoverflow.com/questions/32679505/node-and-express-send-json-formatted
 
-// // 登録済ユーザの取得
-// app.get(`/api/${DB_name}/users`, averageController.getRegisterdUsers);
+// // テスト
+// app.get(`/api/${DB_name}/`, averageController.getTest);
 
-// 取得
-app.get(`/api/${DB_name}/getNewData`, averageController.getNewData);
+// // // 登録済ユーザの取得
+// // app.get(`/api/${DB_name}/users`, averageController.getRegisterdUsers);
 
-// // POSTリクエストによるユーザの登録
-// app.use(express.json())
-// app.post(`/api/${DB_name}/register`, averageController.postRegistUser);
-// app.post(`/api/${DB_name}/postNewData`, averageController.postNewData);
-app.get(`/api/${DB_name}/postNewData`, averageController.postNewData);
+// // 取得
+// app.get(`/api/${DB_name}/getNewData`, averageController.getNewData);
 
-// // ユーザ認証の確認
-// app.post(`/api/${DB_name}/login`, averageController.postConfirmUser);
+// // // POSTリクエストによるユーザの登録
+// // app.use(express.json())
+// // app.post(`/api/${DB_name}/register`, averageController.postRegistUser);
+// // app.post(`/api/${DB_name}/postNewData`, averageController.postNewData);
+// app.get(`/api/${DB_name}/postNewData`, averageController.postNewData);
 
-// // Tokenの確認
-// app.get(`/api/${DB_name}/user`, averageController.postConfirmToken);
+// // // ユーザ認証の確認
+// // app.post(`/api/${DB_name}/login`, averageController.postConfirmUser);
 
-// エラー処理
-app.use(errorController.logErrors);
-app.use(errorController.respondNoResourceFound);
-app.use(errorController.respondInternalError);
+// // // Tokenの確認
+// // app.get(`/api/${DB_name}/user`, averageController.postConfirmToken);
 
-app.listen(port, () => console.log(`Express Server listening on port ${port}!`));
+// // エラー処理
+// app.use(errorController.logErrors);
+// app.use(errorController.respondNoResourceFound);
+// app.use(errorController.respondInternalError);
+
+// app.listen(port, () => console.log(`Express Server listening on port ${port}!`));

@@ -28,7 +28,8 @@ module.exports = {
       // const data = await average.average();
       const data = await average.average;
       await console.log(`retrived average`)
-      res.json(data);
+      console.log(data);
+      // res.json(data);
     } catch (err) {
       console.log(err);
     }
@@ -55,7 +56,8 @@ module.exports = {
       const savedData = await newData.save();
   
       await console.log(`saved data and display data`)
-      res.json(savedData)
+      console.log(savedData);
+      // res.json(savedData)
   
     } catch (err) {
       console.log(err);
