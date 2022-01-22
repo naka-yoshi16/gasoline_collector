@@ -2,7 +2,7 @@
 const gasoline_average = require('../models/gasoline_average');
 // const User = require('./models/user_schema');
 
-const average = require('../average');
+const scrape = require('../scrape');
 
 require('dotenv').config(); // 環境変数
 // const jwtKey = process.env.JWT_KEY
@@ -19,7 +19,7 @@ module.exports = {
       await console.log(`start postNewData. retriving average`)
       // const data = await average.average();
       // const data = await average.average;
-      const data = await average.average(exeTime);
+      const data = await scrape.average(exeTime);
       await console.log(`retrived average`)
       // await console.log(`${data}`)
       const newData = await new gasoline_average({
@@ -55,7 +55,7 @@ module.exports = {
   //     console.log(err);
   //   }
   // },
-  
+
   // getTest : async (req, res) => {
   //   // 拡張機能REST clientのテスト
   //   res.send('hello world');
