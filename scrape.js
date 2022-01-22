@@ -49,6 +49,88 @@ module.exports = {
     await browser.close();
     return {exeTime, rows, TBL}
 // })();
+  },
+  
+  allOverJapan :async (exeTime) => {
+    // const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
+    console.log(`allOverJapan実行開始:${exeTime}`)
+
+    const browser = await puppeteer.launch();
+
+    const page = await browser.newPage();
+    // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
+    // const url = 'https://e-nenpi.com/gs/price_graph/2/1/0/'
+    const url = 'https://e-nenpi.com/gs/price_graph/6/1/0/'
+    await page.goto(url);
+
+    // puppeteerでの要素の取得方法 https://qiita.com/go_sagawa/items/85f97deab7ccfdce53ea
+    // let itemSelector="some selecter > ul > li:nth-child(1) > a";
+    // let listSelector="some selecter > ul > li > a";
+
+    const signboardPriceSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0"
+    // #highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0 > g:nth-child(37) > text > tspan
+    const actualSellingPriceSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-1"
+    const xAxisSelector = "#highcharts-0 > svg > g.highcharts-axis-labels.highcharts-xaxis-labels"
+
+    // 生データ取得
+    // let signboardPriceSelector2 =`#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0 > g:nth-child(${n}) > text > tspan`
+
+    let signboardPriceRawData = await getGraphData(page, signboardPriceSelector)
+    // let n = 0
+    // let test = [];
+    // while (test.length == n){
+    //   try {
+    //     n++;
+    //     let signboardPriceSelector2 =`#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0 > g:nth-child(${n}) > text > tspan`
+    //     let signboardPriceRawData = await page.evaluate((selector) => {
+    //       return document.querySelector(selector).textContent;
+    //     }, signboardPriceSelector2);
+    //     // console.log(signboardPriceRawData)
+    //     test.push(signboardPriceRawData)
+    //   } catch(error) {
+    //     console.log(error.message)
+    //     break;
+    //   }
+    // }
+    // console.log(test)
+
+    // let signboardPriceRawData = await page.evaluate((selector) => {
+    //     return document.querySelector(selector).textContent;
+    // }, signboardPriceSelector);
+    // console.log(signboardPriceRawData)
+
+    // let actualSellingPriceRawData = await page.evaluate((selector) => {
+    //   return document.querySelector(selector).textContent;
+    // }, actualSellingPriceSelector);
+    // console.log(JSON.stringify(actualSellingPriceRawData))
+
+    // let xAxisRawData = await page.evaluate((selector) => {
+    //   return document.querySelector(selector).textContent;
+    // }, xAxisSelector);
+    // console.log(JSON.stringify(xAxisRawData))
+
+    // // 分割 https://qiita.com/turmericN/items/0819317b5c075d971bfa
+    // // let cdn1 = await signboardPriceRawData.match(/.{5}/g);
+    // // console.log(cdn1)
+    // // ["UGG", "UGU", "UAU", "UAA", "UGG", "UUU"]
+
+    // let cdn2 = actualSellingPriceRawData.match(/.{5}/g);
+    // console.log(cdn2)
+
+    // let cdn3 = xAxisRawData.split("月");
+    // console.log(cdn3)
+
+    // // 生データを成形
+    // let rows = prettyPrint(RawData);
+    // // console.log(rows)
+
+    // // vuetify用に成形
+    // let TBL = forVuetifyTBL(rows);
+    // // console.log(TBL)
+
+    await browser.close();
+    // return {exeTime, rows, TBL}
+// })();
   }
 }
 // // 非同期処理とPromise https://zenn.dev/bowtin/articles/ab7d30c33fa747
@@ -57,6 +139,27 @@ module.exports = {
 //   // .then(result => console.dir(result))
 //   .then(result => console.log(JSON.stringify(result,null,'\t')))
 //   .catch((err) => console.log(`average失敗${err}`));
+
+const getGraphData = async (page, partialSelector) => {
+  let n = 0 // 取得する子要素番号
+  let RawDatas = []; // 取得した生データ
+  while (RawDatas.length == n){ // 一致する間は繰り返す
+    try {
+      n++;
+      let dynamicSelector = ` > g:nth-child(${n}) > text > tspan` // 子要素
+      let RawData = await page.evaluate((selector) => { // 取得
+        return document.querySelector(selector).textContent;
+      }, partialSelector + dynamicSelector);
+      // console.log(RawData)
+      RawDatas.push(RawData) // 格納
+    } catch(error) { // 取得できない場合
+      console.log(error.message)
+      break;
+    }
+  }
+  console.log(RawDatas);
+  return RawDatas;
+}
 
 const prettyPrint = (RawData) =>{
   const headerDelimiter = "\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t;"
