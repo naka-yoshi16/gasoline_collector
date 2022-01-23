@@ -53,116 +53,68 @@ module.exports = {
   },
   
   allOverJapan :async (exeTime) => {
-    // try {
-      // const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
-      console.log(`allOverJapan実行開始:${exeTime}`)
+    console.log(`allOverJapan実行開始:${exeTime}`)
+    const browser = await puppeteer.launch();
 
-      const browser = await puppeteer.launch();
+    // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
+    const urls = [
+      'https://e-nenpi.com/gs/price_graph/6/1/0/', // 最近5年間のレギュラー価格
+      'https://e-nenpi.com/gs/price_graph/6/2/0/', // 最近5年間のハイオク価格
+      'https://e-nenpi.com/gs/price_graph/6/3/0/', // 最近5年間の軽油価格
+    ];
+    
+    // puppeteerでの要素の取得方法 https://qiita.com/go_sagawa/items/85f97deab7ccfdce53ea
+    const titleSelector = "#main > div.unit.unit-contentsTitle > div.titleArea > div > h1 > span"; //タイトル
+    const signboardSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0" // 看板価格
+    const actualSellingSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-1" //実売価格
+    const xAxisSelector = "#highcharts-0 > svg > g.highcharts-axis-labels.highcharts-xaxis-labels" // x軸
 
-      // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
-      // const url = 'https://e-nenpi.com/gs/price_graph/2/1/0/'
-      const url = 'https://e-nenpi.com/gs/price_graph/6/1/0/' // 最近5年間のレギュラー価格
-      const urls = [
-        'https://e-nenpi.com/gs/price_graph/6/1/0/', // 最近5年間のレギュラー価格
-        'https://e-nenpi.com/gs/price_graph/6/2/0/', // 最近5年間のハイオク価格
-        'https://e-nenpi.com/gs/price_graph/6/3/0/', // 最近5年間の軽油価格
-      ];
-      
-      // puppeteerでの要素の取得方法 https://qiita.com/go_sagawa/items/85f97deab7ccfdce53ea
-      // let itemSelector="some selecter > ul > li:nth-child(1) > a";
-      // let listSelector="some selecter > ul > li > a";
-      const titleSelecotr = "#main > div.unit.unit-contentsTitle > div.titleArea > div > h1 > span";
-      const signboardPriceSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0"
-      const actualSellingPriceSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-1"
-      const xAxisSelector = "#highcharts-0 > svg > g.highcharts-axis-labels.highcharts-xaxis-labels"
-
-      let allOverJapan = []
-
+    let allOverJapan = []
     // for (const url of urls) {
-      for (i=0; i < urls.length; i++) {
-        const page = await browser.newPage();
-        // await page.goto(url);
-        await page.goto(urls[i])
-              .catch((err)=> console.error(err))
-
-        // 生データ取得
+    for (i=0; i < urls.length; i++) {
+      const page = await browser.newPage();
+      // await page.goto(url);
+      let succeeded = true;
+      await page.goto(urls[i])
+            .catch((err)=> {
+              succeeded = false
+              console.error(`${err}\n  (url:${urls[i]})`)
+            })
+      if(succeeded){
+        // タイトル取得
         let title = await page.evaluate((selector) => { // 取得
           return document.querySelector(selector).textContent;
-        },  titleSelecotr); // 結合セレクタ or 実行元のセレクタ
-        console.log(title)
+        },  titleSelector); // 結合セレクタ or 実行元のセレクタ
+        console.log(`${title} 取得`)
 
-        // 看板価格の取得
-        let signboardPriceRawData = await getGraphData(page, signboardPriceSelector, true)
-        console.log(signboardPriceRawData)
+        // 看板価格の取得 signboard
+        let signboard = await getGraphData(page, signboardSelector, true)
+        // console.log(`signboard:`);
+        // console.log(signboard)
 
-        // 実売価格の取得
-        let actualSellingPriceRawData = await getGraphData(page, actualSellingPriceSelector, true)
-        console.log(actualSellingPriceRawData)
-        // console.log(JSON.stringify(actualSellingPriceRawData,null," "))
-
+        // 実売価格の取得 actualSelling
+        let actualSelling = await getGraphData(page, actualSellingSelector, true)
+        // console.log(`actualSelling:`)
+        // console.log(actualSelling)
+        
         // グラフのx軸取得
-        let xAxisRawData = await getGraphData(page, xAxisSelector, false)
-        // console.log(xAxisRawData)
-        let splitMonth = xAxisRawData[0].split('月')
+        let xAxis = await getGraphData(page, xAxisSelector, false)
+        // console.log(xAxis)
+        let splitMonth = xAxis[0].split('月') // 月ごとに分割
         // console.log(splitMonth)
-        let formatYM = []
-        splitMonth.forEach(element => {
-          // let year = moment(element, 'YYMM').format('YYYY')
-          // let month = moment(element, 'YYMM').format('MM')
-          let ym = moment(element, 'YYMM').format('YYYYMM')
-          // if(year!="Invalid date" && month!="Invalid date") formatYM.push(ym)
-          if(ym!="Invalid date") formatYM.push(ym)
+        let formatYM = splitMonth.map(element => { // 書式YYYYMMへ変換
+          let yearMonth = moment(element, 'YYMM').format('YYYYMM')
+          if(yearMonth!="Invalid date") return yearMonth
         });
         // console.log(formatYM)
 
-        // let allOverJapan = []
-        for(j=0; j< signboardPriceRawData.length; j++){
-          // let obj ={}
-          if(i == 0){
-            let calYM = moment(formatYM[0]).add(j, 'months'); // iか月足す
-            let obj ={
-              year:  moment(calYM).format('YYYY'),
-              month: moment(calYM).format('MM'),
-              regular:{},highOctane:{},lightOil:{}
-            }
-            allOverJapan.push(obj)
-            // console.log(moment(calYM, 'YYMM').format('YYYYMM'))
-            // obj.year = moment(calYM).format('YYYY')
-            // obj.month = moment(calYM).format('MM')
-          }
-          // console.log(allOverJapan[j].month)
-          switch (title){
-            case '最近5年間のレギュラー価格':
-              // obj.regular.signboardPrice = Number(signboardPriceRawData[j])
-              // obj.regular.actualSellingPrice = Number(actualSellingPriceRawData[j])
-              allOverJapan[j].regular.signboardPrice = Number(signboardPriceRawData[j])
-              allOverJapan[j].regular.actualSellingPrice = Number(actualSellingPriceRawData[j])
-              break;
-            case '最近5年間の軽油価格':
-              allOverJapan[j].highOctane.signboardPrice = Number(signboardPriceRawData[j])
-              allOverJapan[j].highOctane.actualSellingPrice = Number(actualSellingPriceRawData[j])
-              break;
-            case '最近5年間のハイオク価格':
-              allOverJapan[j].lightOil.signboardPrice = Number(signboardPriceRawData[j])
-              allOverJapan[j].lightOil.actualSellingPrice = Number(actualSellingPriceRawData[j])
-              break;
-          }
-          // allOverJapan.push(obj)
-        }
+        // 各ガソリン価格、年月をマッピング
+        mapGasolineYM(title, signboard, actualSelling, formatYM, allOverJapan)
       }
-      console.log(allOverJapan)
-
-      await browser.close();
-      // return {exeTime, rows, TBL}
-    // } 
-    //   catch (error) {
-    //   console.log("エラー")
-    //   return null
-    //   // throw "reject"
-    //   // return console.error(error.message)
-    // }
-  return null
-// })();
+      // console.log(allOverJapan)
+    }
+    await browser.close();
+    return {allOverJapan}
   }
 }
 // // 非同期処理とPromise https://zenn.dev/bowtin/articles/ab7d30c33fa747
@@ -171,6 +123,54 @@ module.exports = {
 //   // .then(result => console.dir(result))
 //   .then(result => console.log(JSON.stringify(result,null,'\t')))
 //   .catch((err) => console.log(`average失敗${err}`));
+
+// 各ガソリン価格、年月をマッピング
+const mapGasolineYM = async (title, signboard, actualSelling, formatYM, allOverJapan) => {  
+  for(j=0; j< signboard.length; j++){
+    if(i == 0){// 一度目のみオブジェクト作成
+      let calYM = moment(formatYM[0]).add(j, 'months'); // iか月足す
+      let obj = {
+        year:  moment(calYM).format('YYYY'),
+        month: moment(calYM).format('MM'),
+        regular:{}, highOctane:{}, lightOil:{}
+      }
+      allOverJapan.push(obj)
+      // console.log(moment(calYM, 'YYMM').format('YYYYMM'))
+    }
+    switch (title){
+      case '最近5年間のレギュラー価格':
+        allOverJapan[j].regular.signboard = Number(signboard[j])
+        allOverJapan[j].regular.actualSelling = Number(actualSelling[j])
+        break;
+      case '最近5年間のハイオク価格':
+        allOverJapan[j].highOctane.signboard = Number(signboard[j])
+        allOverJapan[j].highOctane.actualSelling = Number(actualSelling[j])
+        break;
+      case '最近5年間の軽油価格':
+        allOverJapan[j].lightOil.signboard = Number(signboard[j])
+        allOverJapan[j].lightOil.actualSelling = Number(actualSelling[j])
+        break;
+    }
+  }
+  // [
+  //   {
+  //     year: '2017',
+  //     month: '02',
+  //     regular: { signboard: 123.1, actualSelling: 121.1 },
+  //     highOctane: { signboard: 134, actualSelling: 131.8 },
+  //     lightOil: { signboard: 101.5, actualSelling: 98.5 }
+  //   },
+  //   {...},
+  //   ,
+  //   {
+  //     year: '2022',
+  //     month: '01',
+  //     regular: { signboard: 161, actualSelling: 154.7 },
+  //     highOctane: { signboard: 171.9, actualSelling: 165.6 },
+  //     lightOil: { signboard: 139.1, actualSelling: 131.6 }
+  //   }
+  // ]
+}
 
 // グラフのデータを取得 {スクレイピングページ, セレクタ, 結合有無}
 const getGraphData = async (page, exeSelector, isJoin) => {
@@ -194,7 +194,7 @@ const getGraphData = async (page, exeSelector, isJoin) => {
       RawDatas.push(RawData) // 格納
       if(!isJoin) break; // 結合しない場合 1回のみでループ終了
     } catch(error) { // 取得できない場合
-      console.error(error.message)
+      // console.error(error.message)
       break;
     }
   }
