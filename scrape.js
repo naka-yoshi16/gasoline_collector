@@ -4,6 +4,7 @@ const moment = require('moment');
 // https://www.wantedly.com/companies/tutorial/post_articles/296220
 const { pushData } = require('apify');
 const puppeteer = require('puppeteer');
+const { exists } = require('./models/gasoline_average');
 
 // 即時関数を使う理由 https://qiita.com/katsukii/items/cfe9fd968ba0db603b1e
 // module.exports = average;
@@ -52,84 +53,115 @@ module.exports = {
   },
   
   allOverJapan :async (exeTime) => {
-    // const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
-    console.log(`allOverJapan実行開始:${exeTime}`)
+    // try {
+      // const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
+      console.log(`allOverJapan実行開始:${exeTime}`)
 
-    const browser = await puppeteer.launch();
+      const browser = await puppeteer.launch();
 
-    const page = await browser.newPage();
-    // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
-    // const url = 'https://e-nenpi.com/gs/price_graph/2/1/0/'
-    const url = 'https://e-nenpi.com/gs/price_graph/6/1/0/'
-    await page.goto(url);
+      // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
+      // const url = 'https://e-nenpi.com/gs/price_graph/2/1/0/'
+      const url = 'https://e-nenpi.com/gs/price_graph/6/1/0/' // 最近5年間のレギュラー価格
+      const urls = [
+        'https://e-nenpi.com/gs/price_graph/6/1/0/', // 最近5年間のレギュラー価格
+        'https://e-nenpi.com/gs/price_graph/6/2/0/', // 最近5年間のハイオク価格
+        'https://e-nenpi.com/gs/price_graph/6/3/0/', // 最近5年間の軽油価格
+      ];
+      
+      // puppeteerでの要素の取得方法 https://qiita.com/go_sagawa/items/85f97deab7ccfdce53ea
+      // let itemSelector="some selecter > ul > li:nth-child(1) > a";
+      // let listSelector="some selecter > ul > li > a";
+      const titleSelecotr = "#main > div.unit.unit-contentsTitle > div.titleArea > div > h1 > span";
+      const signboardPriceSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0"
+      const actualSellingPriceSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-1"
+      const xAxisSelector = "#highcharts-0 > svg > g.highcharts-axis-labels.highcharts-xaxis-labels"
 
-    // puppeteerでの要素の取得方法 https://qiita.com/go_sagawa/items/85f97deab7ccfdce53ea
-    // let itemSelector="some selecter > ul > li:nth-child(1) > a";
-    // let listSelector="some selecter > ul > li > a";
+      let allOverJapan = []
 
-    const signboardPriceSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0"
-    // #highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0 > g:nth-child(37) > text > tspan
-    const actualSellingPriceSelector = "#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-1"
-    const xAxisSelector = "#highcharts-0 > svg > g.highcharts-axis-labels.highcharts-xaxis-labels"
+    // for (const url of urls) {
+      for (i=0; i < urls.length; i++) {
+        const page = await browser.newPage();
+        // await page.goto(url);
+        await page.goto(urls[i])
+              .catch((err)=> console.error(err))
 
-    // 生データ取得
-    // let signboardPriceSelector2 =`#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0 > g:nth-child(${n}) > text > tspan`
+        // 生データ取得
+        let title = await page.evaluate((selector) => { // 取得
+          return document.querySelector(selector).textContent;
+        },  titleSelecotr); // 結合セレクタ or 実行元のセレクタ
+        console.log(title)
 
-    let signboardPriceRawData = await getGraphData(page, signboardPriceSelector)
-    // let n = 0
-    // let test = [];
-    // while (test.length == n){
-    //   try {
-    //     n++;
-    //     let signboardPriceSelector2 =`#highcharts-0 > svg > g.highcharts-data-labels.highcharts-series-0 > g:nth-child(${n}) > text > tspan`
-    //     let signboardPriceRawData = await page.evaluate((selector) => {
-    //       return document.querySelector(selector).textContent;
-    //     }, signboardPriceSelector2);
-    //     // console.log(signboardPriceRawData)
-    //     test.push(signboardPriceRawData)
-    //   } catch(error) {
-    //     console.log(error.message)
-    //     break;
-    //   }
+        // 看板価格の取得
+        let signboardPriceRawData = await getGraphData(page, signboardPriceSelector, true)
+        console.log(signboardPriceRawData)
+
+        // 実売価格の取得
+        let actualSellingPriceRawData = await getGraphData(page, actualSellingPriceSelector, true)
+        console.log(actualSellingPriceRawData)
+        // console.log(JSON.stringify(actualSellingPriceRawData,null," "))
+
+        // グラフのx軸取得
+        let xAxisRawData = await getGraphData(page, xAxisSelector, false)
+        // console.log(xAxisRawData)
+        let splitMonth = xAxisRawData[0].split('月')
+        // console.log(splitMonth)
+        let formatYM = []
+        splitMonth.forEach(element => {
+          // let year = moment(element, 'YYMM').format('YYYY')
+          // let month = moment(element, 'YYMM').format('MM')
+          let ym = moment(element, 'YYMM').format('YYYYMM')
+          // if(year!="Invalid date" && month!="Invalid date") formatYM.push(ym)
+          if(ym!="Invalid date") formatYM.push(ym)
+        });
+        // console.log(formatYM)
+
+        // let allOverJapan = []
+        for(j=0; j< signboardPriceRawData.length; j++){
+          // let obj ={}
+          if(i == 0){
+            let calYM = moment(formatYM[0]).add(j, 'months'); // iか月足す
+            let obj ={
+              year:  moment(calYM).format('YYYY'),
+              month: moment(calYM).format('MM'),
+              regular:{},highOctane:{},lightOil:{}
+            }
+            allOverJapan.push(obj)
+            // console.log(moment(calYM, 'YYMM').format('YYYYMM'))
+            // obj.year = moment(calYM).format('YYYY')
+            // obj.month = moment(calYM).format('MM')
+          }
+          // console.log(allOverJapan[j].month)
+          switch (title){
+            case '最近5年間のレギュラー価格':
+              // obj.regular.signboardPrice = Number(signboardPriceRawData[j])
+              // obj.regular.actualSellingPrice = Number(actualSellingPriceRawData[j])
+              allOverJapan[j].regular.signboardPrice = Number(signboardPriceRawData[j])
+              allOverJapan[j].regular.actualSellingPrice = Number(actualSellingPriceRawData[j])
+              break;
+            case '最近5年間の軽油価格':
+              allOverJapan[j].highOctane.signboardPrice = Number(signboardPriceRawData[j])
+              allOverJapan[j].highOctane.actualSellingPrice = Number(actualSellingPriceRawData[j])
+              break;
+            case '最近5年間のハイオク価格':
+              allOverJapan[j].lightOil.signboardPrice = Number(signboardPriceRawData[j])
+              allOverJapan[j].lightOil.actualSellingPrice = Number(actualSellingPriceRawData[j])
+              break;
+          }
+          // allOverJapan.push(obj)
+        }
+      }
+      console.log(allOverJapan)
+
+      await browser.close();
+      // return {exeTime, rows, TBL}
+    // } 
+    //   catch (error) {
+    //   console.log("エラー")
+    //   return null
+    //   // throw "reject"
+    //   // return console.error(error.message)
     // }
-    // console.log(test)
-
-    // let signboardPriceRawData = await page.evaluate((selector) => {
-    //     return document.querySelector(selector).textContent;
-    // }, signboardPriceSelector);
-    // console.log(signboardPriceRawData)
-
-    // let actualSellingPriceRawData = await page.evaluate((selector) => {
-    //   return document.querySelector(selector).textContent;
-    // }, actualSellingPriceSelector);
-    // console.log(JSON.stringify(actualSellingPriceRawData))
-
-    // let xAxisRawData = await page.evaluate((selector) => {
-    //   return document.querySelector(selector).textContent;
-    // }, xAxisSelector);
-    // console.log(JSON.stringify(xAxisRawData))
-
-    // // 分割 https://qiita.com/turmericN/items/0819317b5c075d971bfa
-    // // let cdn1 = await signboardPriceRawData.match(/.{5}/g);
-    // // console.log(cdn1)
-    // // ["UGG", "UGU", "UAU", "UAA", "UGG", "UUU"]
-
-    // let cdn2 = actualSellingPriceRawData.match(/.{5}/g);
-    // console.log(cdn2)
-
-    // let cdn3 = xAxisRawData.split("月");
-    // console.log(cdn3)
-
-    // // 生データを成形
-    // let rows = prettyPrint(RawData);
-    // // console.log(rows)
-
-    // // vuetify用に成形
-    // let TBL = forVuetifyTBL(rows);
-    // // console.log(TBL)
-
-    await browser.close();
-    // return {exeTime, rows, TBL}
+  return null
 // })();
   }
 }
@@ -140,24 +172,33 @@ module.exports = {
 //   .then(result => console.log(JSON.stringify(result,null,'\t')))
 //   .catch((err) => console.log(`average失敗${err}`));
 
-const getGraphData = async (page, partialSelector) => {
+// グラフのデータを取得 {スクレイピングページ, セレクタ, 結合有無}
+const getGraphData = async (page, exeSelector, isJoin) => {
   let n = 0 // 取得する子要素番号
   let RawDatas = []; // 取得した生データ
-  while (RawDatas.length == n){ // 一致する間は繰り返す
+  // console.log(nonJoinSelector)
+  while (n < 100 && RawDatas.length == n){ // 一致する間は繰り返す
     try {
-      n++;
-      let dynamicSelector = ` > g:nth-child(${n}) > text > tspan` // 子要素
+      n++;  //console.log(n);
+      let joinSelector;
+      if(isJoin){
+        let dynamicSelector = ` > g:nth-child(${n}) > text > tspan`; // 子要素
+        joinSelector = exeSelector + dynamicSelector;// 実行元のセレクタ + 子要素セレクタ(動的)
+      }
+      // console.log(joinSelector)
       let RawData = await page.evaluate((selector) => { // 取得
         return document.querySelector(selector).textContent;
-      }, partialSelector + dynamicSelector);
+      // }, partialSelector + dynamicSelector); // 実行元のセレクタ + 子要素セレクタ(動的)
+      },  joinSelector || exeSelector); // 結合セレクタ or 実行元のセレクタ
       // console.log(RawData)
       RawDatas.push(RawData) // 格納
+      if(!isJoin) break; // 結合しない場合 1回のみでループ終了
     } catch(error) { // 取得できない場合
-      console.log(error.message)
+      console.error(error.message)
       break;
     }
   }
-  console.log(RawDatas);
+  // console.log(RawDatas);
   return RawDatas;
 }
 
