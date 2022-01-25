@@ -5,7 +5,7 @@ const cron = require('node-cron');
 
 const moment = require('moment');
 const mongo = require('./mongo')
-const averageController = require("./controllers/averageControllers");
+const saveControllers = require("./controllers/saveControllers");
 // cron.schedule('*/3 * * * * *', () => console.log('3秒ごとに実行'));
 // cron.schedule('*/3 * * * * *', () => {
 //   const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
@@ -23,6 +23,6 @@ cron.schedule('* * * * *', () => {
 
   mongo.connect() // mongo接続
 
-  averageController.postNewData(exeTime)
+  saveControllers.postNewData(exeTime)
 });
 
