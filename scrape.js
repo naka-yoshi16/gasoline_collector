@@ -16,7 +16,14 @@ module.exports = {
     // const exeTime = moment().format()    // 2020-04-22T22:14:25+09:00
     console.log(`average実行開始:${exeTime}`)
 
-    const browser = await puppeteer.launch();
+    let browser;
+    if(process.platform === 'linux'){
+      browser = await puppeteer.launch({
+        executablePath: '/usr/bin/chromium-browser'
+      });
+    } else {
+      browser = await puppeteer.launch();
+    }
 
     const page = await browser.newPage();
     // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
@@ -54,7 +61,15 @@ module.exports = {
   
   allOverJapan :async (exeTime) => {
     console.log(`allOverJapan実行開始:${exeTime}`)
-    const browser = await puppeteer.launch();
+
+    let browser;
+    if(process.platform === 'linux'){
+      browser = await puppeteer.launch({
+        executablePath: '/usr/bin/chromium-browser'
+      });
+    } else {
+      browser = await puppeteer.launch();
+    }
 
     // ※都道府県別ランキングは、e燃費に投稿された直近30日の看板価格データを使用しています。※沖縄県のガソリン価格は税制優遇されている、ランキング対象からは除外させていただいております。
     const urls = [
